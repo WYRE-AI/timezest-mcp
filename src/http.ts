@@ -6,6 +6,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { createMcpServer } from './server.js';
 import { getCredentials, runWithCredentials } from './utils/client.js';
 import { logger } from './utils/logger.js';
+import { verifyS2sHeader, S2S_HEADER } from './s2s-verify.js';
+
+const S2S_SECRET = process.env.CONDUIT_S2S_SECRET || '';
 
 export function startHttpServer(port: number): http.Server {
   const isGatewayMode = process.env.AUTH_MODE === 'gateway';
@@ -24,6 +27,16 @@ export function startHttpServer(port: number): http.Server {
     if (req.method !== 'POST' || req.url !== '/mcp') {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not found' }));
+      return;
+    }
+
+    if (S2S_SECRET && !verifyS2sHeader(req.headers[S2S_HEADER] as string | undefined, S2S_SECRET)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          error: 'Missing or invalid X-Gateway-S2S header: this endpoint only accepts requests signed by the gateway.',
+        })
+      );
       return;
     }
 
