@@ -18,18 +18,22 @@ updates:
       prefix-development: "deps-dev"
       include: "scope"
     groups:
-      # All dev/CI tooling (eslint, vitest, typescript, @types/*, etc.) →
-      # ONE PR. Minor/patch auto-merged when CI is green.
-      # MAJORS excluded from auto-merge (2026-07-20): a grouped
-      # major bump (e.g. typescript 6->7) auto-merged blind against this
-      # repo's "green" thin-caller release.yml, which has no PR-time
-      # build/test job -- broke main twice in 2 days. Majors now land as
-      # individual, non-auto-merged PRs, same treatment production majors
-      # already get below. Interim stop-gap; the durable fix is real
-      # PR-time CI on this repo (tracked fleet-wide separately).
+      # All dev/CI tooling (eslint, vitest, typescript, @types/*, etc.) incl.
+      # majors → ONE PR. The janitor auto-merges it when CI is green.
+      #
+      # LIFTED 2026-08-21 the 2026-07-20 major-exclusion stopgap: a grouped
+      # major bump (e.g. typescript 6->7) had auto-merged blind against this
+      # repo's then-thin-caller release.yml, which had no PR-time build/test
+      # job -- broke main twice in 2 days. This repo has since gained a real
+      # ci.yml (build/lint/test on push+PR), confirmed wired as a REQUIRED
+      # status check ("build") in branch protection -- the exact durable fix
+      # the stopgap was waiting on. Majors now group with minor/patch like
+      # the fleet-standard shape (see nutanix-mcp's dependabot.yml). The
+      # typescript-specific ignore below stays regardless -- unrelated
+      # reason (toolchain incompatibility, not CI-gating).
       dev-dependencies:
         dependency-type: "development"
-        update-types: ["minor", "patch"]
+        update-types: ["major", "minor", "patch"]
       # Production minor + patch → ONE PR. Auto-merged when green.
       production-minor-patch:
         dependency-type: "production"
@@ -44,13 +48,9 @@ updates:
       # Deliberate hold, not a permanent blind -- remove once typescript-eslint + the
       # tsup/DTS toolchain support TS7.
       #
-      # Added 2026-08-20, minimal/surgical on top of this repo's existing 07-20
-      # major-exclusion stopgap above -- did NOT fold this repo into the fleet's
-      # standard grouped-majors shape, since that stopgap is a deliberate,
-      # documented, incident-driven decision (a blind grouped-major auto-merge
-      # broke main twice), not staleness. This repo has since gained a real
-      # PR-time ci.yml (build/lint/test), which may make the stopgap safe to lift,
-      # but that's a separate call -- out of scope here.
+      # Added 2026-08-20, independent of the (now-lifted, see above) 07-20
+      # major-exclusion stopgap -- this hold is toolchain incompatibility,
+      # not CI-gating, so it applies regardless of that stopgap's status.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
