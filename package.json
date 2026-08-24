@@ -1,5 +1,5 @@
 {
-  "name": "@wyre-technology/timezest-mcp",
+  "name": "@wyre-ai/timezest-mcp",
   "version": "1.2.5",
   "type": "module",
   "description": "MCP server for TimeZest scheduling platform",
@@ -55,6 +55,6 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wyre-technology/timezest-mcp.git"
+    "url": "https://github.com/WYRE-AI/timezest-mcp.git"
   }
 }

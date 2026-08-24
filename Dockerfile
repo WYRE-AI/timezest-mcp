@@ -37,8 +37,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/manifest.json ./
 
 # OCI label for GHCR repository linking
-LABEL org.opencontainers.image.source=https://github.com/wyre-technology/timezest-mcp
-LABEL io.modelcontextprotocol.server.name="io.github.wyre-technology/timezest-mcp"
+LABEL org.opencontainers.image.source=https://github.com/WYRE-AI/timezest-mcp
+LABEL io.modelcontextprotocol.server.name="io.github.wyre-ai/timezest-mcp"
 
 # Switch to non-root user
 USER mcp

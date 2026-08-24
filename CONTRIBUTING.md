@@ -6,7 +6,7 @@ Thank you for considering contributing to the TimeZest MCP Server!
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/wyre-technology/timezest-mcp.git
+   git clone https://github.com/WYRE-AI/timezest-mcp.git
    cd timezest-mcp
    ```
 

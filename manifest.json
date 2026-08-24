@@ -5,10 +5,10 @@
   "version": "0.1.0",
   "author": "WYRE Technology",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/wyre-technology/timezest-mcp",
+  "homepage": "https://github.com/WYRE-AI/timezest-mcp",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wyre-technology/timezest-mcp.git"
+    "url": "https://github.com/WYRE-AI/timezest-mcp.git"
   },
   "keywords": [
     "timezest",
@@ -38,7 +38,7 @@
     {
       "type": "stdio",
       "command": "npx",
-      "args": ["@wyre-technology/timezest-mcp"]
+      "args": ["@wyre-ai/timezest-mcp"]
     },
     {
       "type": "http",

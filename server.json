@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.wyre-technology/timezest-mcp",
+  "name": "io.github.wyre-ai/timezest-mcp",
   "title": "TimeZest",
   "description": "MCP server for TimeZest \u2014 appointment scheduling, agents, appointment types, and resources for MSPs.",
   "repository": {
-    "url": "https://github.com/wyre-technology/timezest-mcp",
+    "url": "https://github.com/WYRE-AI/timezest-mcp",
     "source": "github"
   },
   "version": "0.0.0",
-  "websiteUrl": "https://github.com/wyre-technology/timezest-mcp",
+  "websiteUrl": "https://github.com/WYRE-AI/timezest-mcp",
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/wyre-technology/timezest-mcp:0.0.0",
+      "identifier": "ghcr.io/wyre-ai/timezest-mcp:0.0.0",
       "transport": {
         "type": "stdio"
       },
