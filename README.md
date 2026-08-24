@@ -1,6 +1,6 @@
 # TimeZest MCP Server
 
-[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fwyre--technology%2Ftimezest--mcp-blue)](https://ghcr.io/wyre-technology/timezest-mcp)
+[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fwyre--ai%2Ftimezest--mcp-blue)](https://ghcr.io/wyre-ai/timezest-mcp)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 MCP (Model Context Protocol) server for [TimeZest](https://timezest.com) scheduling platform. Enables LLM agents to create and manage technician scheduling requests with PSA integration.
@@ -24,13 +24,13 @@ MCP (Model Context Protocol) server for [TimeZest](https://timezest.com) schedul
 ```bash
 docker run -it --rm \
   -e TIMEZEST_API_TOKEN=your-api-token \
-  ghcr.io/wyre-technology/timezest-mcp:latest
+  ghcr.io/wyre-ai/timezest-mcp:latest
 ```
 
 ### npm
 
 ```bash
-npm install -g @wyre-technology/timezest-mcp
+npm install -g @wyre-ai/timezest-mcp
 TIMEZEST_API_TOKEN=your-token timezest-mcp
 ```
 
@@ -164,7 +164,7 @@ filter: "endUser.company:\"Important Customer\""
 
 ```bash
 # Clone and install
-git clone https://github.com/wyre-technology/timezest-mcp.git
+git clone https://github.com/WYRE-AI/timezest-mcp.git
 cd timezest-mcp
 npm install
 
@@ -203,7 +203,7 @@ Add to your MCP settings:
   "mcpServers": {
     "timezest": {
       "command": "npx",
-      "args": ["@wyre-technology/timezest-mcp"],
+      "args": ["@wyre-ai/timezest-mcp"],
       "env": {
         "TIMEZEST_API_TOKEN": "your-api-token"
       }
