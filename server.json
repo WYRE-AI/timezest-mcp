@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.wyre-ai/timezest-mcp",
+  "name": "io.github.WYRE-AI/timezest-mcp",
   "title": "TimeZest",
   "description": "MCP server for TimeZest \u2014 appointment scheduling, agents, appointment types, and resources for MSPs.",
   "repository": {
