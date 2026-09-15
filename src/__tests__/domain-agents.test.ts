@@ -27,9 +27,9 @@ function clientWith(overrides: Partial<{ list: any; get: any }>) {
 }
 
 describe('agentsHandler.getTools', () => {
-  it('exposes list, get, and back tools', () => {
+  it('exposes list and get tools', () => {
     const names = agentsHandler.getTools().map((t) => t.name);
-    expect(names).toEqual(['timezest_agents_list', 'timezest_agents_get', 'timezest_back']);
+    expect(names).toEqual(['timezest_agents_list', 'timezest_agents_get']);
   });
 });
 
@@ -68,17 +68,6 @@ describe('agentsHandler.handleCall', () => {
     });
   });
 
-  it('timezest_back returns a navigation message without touching the client', async () => {
-    const list = vi.fn();
-    const get = vi.fn();
-    mockedGetClient.mockResolvedValue(clientWith({ list, get }));
-
-    const result = await agentsHandler.handleCall('timezest_back', {});
-
-    expect(list).not.toHaveBeenCalled();
-    expect(get).not.toHaveBeenCalled();
-    expect(result.content[0].text).toMatch(/Returned to main navigation/);
-  });
 
   it('returns isError for an unknown tool name', async () => {
     mockedGetClient.mockResolvedValue(clientWith({}));

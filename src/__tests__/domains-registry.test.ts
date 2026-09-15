@@ -1,34 +1,42 @@
 /**
- * getDomainHandler is the lazy-loading registry every MCP tool call routes
- * through (see server.ts). It was never invoked directly by any existing
- * test — only indirectly, and only for the always-loaded navigation handler.
+ * getHandlerForTool is the registry every MCP tool call routes through
+ * (see server.ts).
+ *
+ * This replaces the old lazy getDomainHandler(domain) coverage: routing is
+ * by tool name now, not by a domain the caller had to enter first. The
+ * tool-name-to-handler mapping itself is asserted in tool-surface.test.ts;
+ * what matters here is that each domain's tools reach the handler that
+ * implements them, and that unknown names route nowhere.
  */
 import { describe, it, expect } from 'vitest';
-import { getDomainHandler, navigationHandler } from '../domains/index.js';
+import { getHandlerForTool, statusHandler } from '../domains/index.js';
+import { agentsHandler } from '../domains/agents.js';
+import { teamsHandler } from '../domains/teams.js';
+import { appointmentTypesHandler } from '../domains/appointment-types.js';
+import { resourcesHandler } from '../domains/resources.js';
+import { schedulingHandler } from '../domains/scheduling.js';
 
-describe('getDomainHandler', () => {
-  it('resolves each known domain to a handler exposing getTools/handleCall', async () => {
-    for (const domain of ['agents', 'teams', 'appointment_types', 'resources', 'scheduling']) {
-      const handler = await getDomainHandler(domain);
-      expect(handler, `domain "${domain}"`).not.toBeNull();
-      expect(typeof handler!.getTools).toBe('function');
-      expect(typeof handler!.handleCall).toBe('function');
-    }
+describe('getHandlerForTool', () => {
+  it.each([
+    ['timezest_status', statusHandler],
+    ['timezest_agents_list', agentsHandler],
+    ['timezest_teams_get', teamsHandler],
+    ['timezest_appointment_types_list', appointmentTypesHandler],
+    ['timezest_resources_list', resourcesHandler],
+    ['timezest_scheduling_create_request', schedulingHandler],
+  ])('routes %s to its implementing handler', (toolName, expected) => {
+    expect(getHandlerForTool(toolName as string)).toBe(expected);
   });
 
-  it('returns null for an unknown domain', async () => {
-    const handler = await getDomainHandler('billing');
-    expect(handler).toBeNull();
+  it('returns null for an unknown tool', () => {
+    expect(getHandlerForTool('timezest_billing_list')).toBeNull();
   });
 
-  it('caches the handler instance across repeated lookups of the same domain', async () => {
-    const first = await getDomainHandler('agents');
-    const second = await getDomainHandler('agents');
-    expect(first).toBe(second);
-  });
-
-  it('exports navigationHandler directly (always-available, not lazy-loaded)', () => {
-    expect(typeof navigationHandler.getTools).toBe('function');
-    expect(navigationHandler.getTools().map((t) => t.name)).toContain('timezest_status');
+  it('returns null for the removed navigation tools', () => {
+    // Conduit suppresses these by suffix; nothing here implements them any
+    // more either, so a stale client cache calling one gets a clean
+    // "unknown tool" instead of silently reaching a handler.
+    expect(getHandlerForTool('timezest_navigate')).toBeNull();
+    expect(getHandlerForTool('timezest_back')).toBeNull();
   });
 });

@@ -7,8 +7,7 @@
  *      into the flat, label-resolved payload the iframe renders from
  */
 import { describe, it, expect, vi } from 'vitest';
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { navigationHandler, getDomainHandler } from '../domains/index.js';
+import { getAllTools } from '../domains/index.js';
 import { listResources, readResource } from '../resources.js';
 import {
   buildSchedulingRequestCard,
@@ -20,23 +19,10 @@ import { SCHEDULING_REQUEST_CARD_HTML } from '../generated/scheduling-request-ca
 
 const RENDERABLE_TOOLS = ['timezest_scheduling_get'];
 
-// Mirrors the DOMAINS registry in src/domains/navigation.ts.
-const ALL_DOMAINS = ['agents', 'teams', 'appointment_types', 'resources', 'scheduling'];
-
-async function getAllTools(): Promise<Tool[]> {
-  const tools: Tool[] = [...navigationHandler.getTools()];
-  for (const domain of ALL_DOMAINS) {
-    const handler = await getDomainHandler(domain);
-    expect(handler).not.toBeNull();
-    tools.push(...handler!.getTools());
-  }
-  return tools;
-}
-
 describe('MCP Apps scheduling-request card', () => {
   describe('tool _meta advertisement', () => {
     it.each(RENDERABLE_TOOLS)('%s links the card via _meta', async (name) => {
-      const tool = (await getAllTools()).find((t) => t.name === name);
+      const tool = getAllTools().find((t) => t.name === name);
       expect(tool).toBeDefined();
       // Canonical flat key (ext-apps RESOURCE_URI_META_KEY) …
       expect(tool?._meta?.['ui/resourceUri']).toBe(SCHEDULING_REQUEST_CARD_RESOURCE_URI);
@@ -47,7 +33,7 @@ describe('MCP Apps scheduling-request card', () => {
     });
 
     it('no other tools carry UI metadata', async () => {
-      const others = (await getAllTools()).filter(
+      const others = getAllTools().filter(
         (t) => t._meta && !RENDERABLE_TOOLS.includes(t.name)
       );
       expect(others).toEqual([]);

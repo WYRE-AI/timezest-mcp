@@ -21,9 +21,9 @@ function clientWith(overrides: Partial<{ list: any; get: any }>) {
 }
 
 describe('teamsHandler.getTools', () => {
-  it('exposes list, get, and back tools', () => {
+  it('exposes list and get tools', () => {
     const names = teamsHandler.getTools().map((t) => t.name);
-    expect(names).toEqual(['timezest_teams_list', 'timezest_teams_get', 'timezest_back']);
+    expect(names).toEqual(['timezest_teams_list', 'timezest_teams_get']);
   });
 });
 
@@ -61,15 +61,6 @@ describe('teamsHandler.handleCall', () => {
     });
   });
 
-  it('timezest_back returns a navigation message without touching the client', async () => {
-    const list = vi.fn();
-    mockedGetClient.mockResolvedValue(clientWith({ list }));
-
-    const result = await teamsHandler.handleCall('timezest_back', {});
-
-    expect(list).not.toHaveBeenCalled();
-    expect(result.content[0].text).toMatch(/Returned to main navigation/);
-  });
 
   it('returns isError for an unknown tool name', async () => {
     mockedGetClient.mockResolvedValue(clientWith({}));
