@@ -49,6 +49,14 @@ TIMEZEST_API_TOKEN=your-token timezest-mcp
 Every tool below is listed and callable immediately — there is no domain to
 enter first. The groupings are documentation only.
 
+> **Upgrading from 2.x?** `timezest_navigate` and `timezest_back` are gone.
+> Nothing replaces them: call the domain tools directly, because they are all
+> listed up front now. A client that used to call
+> `timezest_navigate({domain: "agents"})` and then `timezest_agents_list`
+> should just call `timezest_agents_list` — likewise
+> `timezest_scheduling_list` and the rest. `timezest_status` still works and
+> now reports the available tools instead of a menu to enter.
+
 ### Status
 - `timezest_status` - Show connection status and the available tools
 
