@@ -20,9 +20,9 @@ function clientWith(overrides: Partial<{ list: any }>) {
 }
 
 describe('resourcesHandler.getTools', () => {
-  it('exposes list and back tools', () => {
+  it('exposes the list tool', () => {
     const names = resourcesHandler.getTools().map((t) => t.name);
-    expect(names).toEqual(['timezest_resources_list', 'timezest_back']);
+    expect(names).toEqual(['timezest_resources_list']);
   });
 });
 
@@ -48,15 +48,6 @@ describe('resourcesHandler.handleCall', () => {
     });
   });
 
-  it('timezest_back returns a navigation message without touching the client', async () => {
-    const list = vi.fn();
-    mockedGetClient.mockResolvedValue(clientWith({ list }));
-
-    const result = await resourcesHandler.handleCall('timezest_back', {});
-
-    expect(list).not.toHaveBeenCalled();
-    expect(result.content[0].text).toMatch(/Returned to main navigation/);
-  });
 
   it('returns isError for an unknown tool name', async () => {
     mockedGetClient.mockResolvedValue(clientWith({}));

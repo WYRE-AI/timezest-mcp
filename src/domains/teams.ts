@@ -41,14 +41,6 @@ function getTools(): Tool[] {
         required: ['teamId'],
       },
     },
-    {
-      name: 'timezest_back',
-      description: 'Return to main navigation',
-      inputSchema: {
-        type: 'object',
-        properties: {},
-      },
-    },
   ];
 }
 
@@ -86,15 +78,6 @@ async function handleCall(
           content: [{
             type: 'text',
             text: JSON.stringify(team, null, 2),
-          }],
-        };
-      }
-
-      case 'timezest_back': {
-        return {
-          content: [{
-            type: 'text',
-            text: 'Returned to main navigation. Use "timezest_status" to see available domains.',
           }],
         };
       }

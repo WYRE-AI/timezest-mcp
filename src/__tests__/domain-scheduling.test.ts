@@ -49,14 +49,13 @@ function baseClient(overrides: Record<string, any> = {}) {
 }
 
 describe('schedulingHandler.getTools', () => {
-  it('exposes list, get, create, cancel, and back tools', () => {
+  it('exposes list, get, create, and cancel tools', () => {
     const names = schedulingHandler.getTools().map((t) => t.name);
     expect(names).toEqual([
       'timezest_scheduling_list',
       'timezest_scheduling_get',
       'timezest_scheduling_create_request',
       'timezest_scheduling_cancel',
-      'timezest_back',
     ]);
   });
 
@@ -245,18 +244,9 @@ describe('schedulingHandler.handleCall — cancel', () => {
   });
 });
 
-describe('schedulingHandler.handleCall — back / unknown / errors', () => {
+describe('schedulingHandler.handleCall — unknown / errors', () => {
   beforeEach(() => mockedGetClient.mockReset());
 
-  it('timezest_back returns a navigation message without touching the client', async () => {
-    const list = vi.fn();
-    mockedGetClient.mockResolvedValue(baseClient({ schedulingRequests: { list } }));
-
-    const result = await schedulingHandler.handleCall('timezest_back', {});
-
-    expect(list).not.toHaveBeenCalled();
-    expect(result.content[0].text).toMatch(/Returned to main navigation/);
-  });
 
   it('returns isError for an unknown tool name', async () => {
     mockedGetClient.mockResolvedValue(baseClient());

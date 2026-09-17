@@ -7,7 +7,7 @@ MCP (Model Context Protocol) server for [TimeZest](https://timezest.com) schedul
 
 ## Features
 
-- 🎯 **Decision-tree navigation** - organized tool discovery
+- 🎯 **Flat tool list** - every tool listed and callable immediately
 - 📅 **Full scheduling lifecycle** - create, view, cancel requests
 - 🔗 **PSA integration** - ConnectWise, Autotask, Halo support
 - 🌍 **IANA timezone handling** - explicit timezone management
@@ -44,13 +44,21 @@ TIMEZEST_API_TOKEN=your-token timezest-mcp
 | `AUTH_MODE` | No | Set to `gateway` for WYRE gateway integration |
 | `LOG_LEVEL` | No | Log level: `debug`, `info` (default), `warn`, `error` |
 
-## Tool Domains
+## Tools
 
-The server uses decision-tree navigation to organize tools by domain:
+Every tool below is listed and callable immediately — there is no domain to
+enter first. The groupings are documentation only.
 
-### Navigation
-- `timezest_navigate` - Enter a domain to access its tools
-- `timezest_status` - Show available domains and current state
+> **Upgrading from 2.x?** `timezest_navigate` and `timezest_back` are gone.
+> Nothing replaces them: call the domain tools directly, because they are all
+> listed up front now. A client that used to call
+> `timezest_navigate({domain: "agents"})` and then `timezest_agents_list`
+> should just call `timezest_agents_list` — likewise
+> `timezest_scheduling_list` and the rest. `timezest_status` still works and
+> now reports the available tools instead of a menu to enter.
+
+### Status
+- `timezest_status` - Show connection status and the available tools
 
 ### Agents
 - `timezest_agents_list` - List individual technicians
@@ -75,14 +83,11 @@ The server uses decision-tree navigation to organize tools by domain:
 
 ## Usage Examples
 
-### Basic Navigation
+### Check What's Available
 
 ```
-User: "Show me TimeZest domains"
+User: "What can TimeZest do?"
 Tools: timezest_status
-
-User: "Go to scheduling"
-Tools: timezest_navigate(domain="scheduling")
 ```
 
 ### Create a Scheduling Request
@@ -218,7 +223,7 @@ The server is designed for the WYRE MCP Gateway with:
 - Per-request server instances (stateless)
 - Header-based credential injection
 - Structured error responses
-- Decision-tree tool organization
+- Flat tool list (no navigation state to enter)
 
 ## API Coverage
 
