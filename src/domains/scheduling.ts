@@ -7,6 +7,10 @@ import { getClient } from '../utils/client.js';
 import { logger } from '../utils/logger.js';
 import { elicitSelection, elicitConfirmation } from '../utils/elicitation.js';
 import { buildSchedulingRequestCard, SCHEDULING_REQUEST_CARD_META } from '../card.builder.js';
+import {
+  SCHEDULING_STATUS_ALIASES,
+  TIMEZEST_SCHEDULING_STATUSES,
+} from '../vendor/node-timezest/types/scheduling-requests.js';
 
 function getTools(): Tool[] {
   return [
@@ -18,14 +22,18 @@ function getTools(): Tool[] {
         properties: {
           pageSize: {
             type: 'number',
-            description: 'Number of results per page (default: 50, max: 100)',
+            description:
+              'How many records to return from this page (1–20). TimeZest list pages are fixed at 20 and ignore a page_size query parameter; smaller values truncate that page. Larger values still return at most one TimeZest page (20).',
             minimum: 1,
             maximum: 100,
           },
           status: {
             type: 'string',
-            enum: ['pending', 'booked', 'cancelled', 'completed'],
-            description: 'Filter by status',
+            enum: [...TIMEZEST_SCHEDULING_STATUSES, ...Object.keys(SCHEDULING_STATUS_ALIASES)],
+            description:
+              'Filter by TimeZest status: new, sent, scheduled, cancelled, closed. ' +
+              'Legacy aliases are accepted and mapped: pending→sent, booked→scheduled, completed→closed. ' +
+              'Sent as a TQL filter (scheduling_request.status EQ <value>). TimeZest ignores a status query parameter.',
           },
           filter: {
             type: 'string',
@@ -89,7 +97,8 @@ function getTools(): Tool[] {
           resourceIds: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Specific resource IDs (agents or teams) to book with',
+            description:
+              'Resource IDs (agent or team ids) to book with. Sent to TimeZest as the JSON array resource_ids. Omit to send an empty array — TimeZest requires the field to be an array.',
           },
           notes: {
             type: 'string',

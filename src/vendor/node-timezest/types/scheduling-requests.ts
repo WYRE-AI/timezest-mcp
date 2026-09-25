@@ -1,5 +1,32 @@
 import type { TriggerMode, DateTimeRange, PSAEntity, ContactInfo } from './common.js';
 
+/**
+ * Statuses TimeZest actually stores.
+ * https://developer.timezest.com/scheduling_requests/
+ *
+ * - `new` — created, no email sent yet
+ * - `sent` — at least one email sent to the end user
+ * - `scheduled` — the end user picked a time
+ * - `cancelled` — cancelled by the end user or an agent
+ * - `closed` — closed by a workflow; can no longer be scheduled
+ */
+export const TIMEZEST_SCHEDULING_STATUSES = ['new', 'sent', 'scheduled', 'cancelled', 'closed'] as const;
+
+export type TimeZestSchedulingStatus = (typeof TIMEZEST_SCHEDULING_STATUSES)[number];
+
+/**
+ * Legacy tool enum values, kept so existing callers keep working.
+ * `completed` maps to `closed` (the terminal workflow state in the API).
+ * `pending` maps to `sent` (a request already emailed, not yet booked).
+ */
+export const SCHEDULING_STATUS_ALIASES = {
+  pending: 'sent',
+  booked: 'scheduled',
+  completed: 'closed',
+} as const satisfies Record<string, TimeZestSchedulingStatus>;
+
+export type SchedulingStatusFilter = TimeZestSchedulingStatus | keyof typeof SCHEDULING_STATUS_ALIASES;
+
 export interface SchedulingRequest {
   /** Unique scheduling request identifier */
   id: string;
@@ -19,8 +46,8 @@ export interface SchedulingRequest {
   associatedEntities?: PSAEntity[];
   /** Booking URL (present when triggerMode = 'generate_url') */
   bookingUrl?: string;
-  /** Request status */
-  status: 'pending' | 'booked' | 'cancelled' | 'completed';
+  /** Request status. TimeZest values: new, sent, scheduled, cancelled, closed. */
+  status: TimeZestSchedulingStatus;
   /** Scheduled date/time (when booked) */
   scheduledAt?: string;
   /** Assigned resource ID (when booked) */
@@ -57,8 +84,12 @@ export interface SchedulingRequestListParams {
   endingBefore?: string;
   /** TQL filter string */
   filter?: string;
-  /** Filter by status */
-  status?: SchedulingRequest['status'];
+  /**
+   * Filter by status. Official TimeZest values (new, sent, scheduled,
+   * cancelled, closed) or legacy aliases (pending→sent, booked→scheduled,
+   * completed→closed). Wired as a TQL `filter`, not a `status` query param.
+   */
+  status?: SchedulingStatusFilter;
 }
 
 export interface CancelSchedulingRequestData {

@@ -6,6 +6,8 @@ import type {
   CancelSchedulingRequestData,
 } from '../types/scheduling-requests.js';
 import { unwrapResponse } from '../pagination.js';
+import { takePage } from '../list-page.js';
+import { buildSchedulingRequestBody, schedulingListFilter } from '../scheduling-wire.js';
 
 export class SchedulingRequestsResource {
   constructor(private readonly httpClient: HttpClient) {}
@@ -14,17 +16,17 @@ export class SchedulingRequestsResource {
    * List all scheduling requests
    */
   async list(params: SchedulingRequestListParams = {}): Promise<SchedulingRequest[]> {
+    // TimeZest ignores a `status` query param and has no `page_size` param
+    // (pages are fixed at 20). Status is a TQL filter; pageSize truncates.
     const response = await this.httpClient.request<SchedulingRequest[] | { data: SchedulingRequest[] }>('/v1/scheduling_requests', {
       params: {
-        page_size: params.pageSize,
         starting_after: params.startingAfter,
         ending_before: params.endingBefore,
-        filter: params.filter,
-        status: params.status,
+        filter: schedulingListFilter(params.filter, params.status),
       },
     });
 
-    return unwrapResponse<SchedulingRequest>(response);
+    return takePage(unwrapResponse<SchedulingRequest>(response), params.pageSize);
   }
 
   /**
@@ -41,7 +43,7 @@ export class SchedulingRequestsResource {
   async create(data: CreateSchedulingRequestData): Promise<SchedulingRequest> {
     return this.httpClient.request<SchedulingRequest>('/v1/scheduling_requests', {
       method: 'POST',
-      body: data,
+      body: buildSchedulingRequestBody(data),
     });
   }
 

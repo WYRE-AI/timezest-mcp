@@ -101,6 +101,43 @@ describe('buildSchedulingRequestCard', () => {
     ]);
   });
 
+  it('reads TimeZest snake_case payloads, including Autotask associated_entities', async () => {
+    const card = await buildSchedulingRequestCard(
+      {
+        id: 'sreq_1',
+        status: 'scheduled',
+        appointment_type_id: 'apty_1',
+        end_user_name: 'Ian Brady',
+        end_user_email: 'ian.brady@steadfastsolutions.com.au',
+        scheduling_url: 'https://example.timezest.com/schedule/abc',
+        associated_entities: [
+          { type: 'autotask/ticket', id: 13281, number: 'T20230401.0001' },
+          { type: 'autotask/company', id: 23149 },
+          { type: 'autotask/contact', id: 1778 },
+        ],
+        scheduled_agents: [{ type: 'agent', id: 'agnt_1', name: 'Ian' }],
+      },
+      client({
+        appointmentTypes: {
+          get: async () => ({ id: 'apty_1', internal_name: 'Remote Support', duration_mins: 30 }),
+        },
+        agents: { get: async () => ({ id: 'agnt_1', name: 'Ian' }) },
+      })
+    );
+
+    expect(card!.title).toBe('Remote Support');
+    expect(card!.duration).toBe('30 min');
+    expect(card!.customer).toBe('Ian Brady');
+    expect(card!.email).toBe('ian.brady@steadfastsolutions.com.au');
+    expect(card!.bookingUrl).toBe('https://example.timezest.com/schedule/abc');
+    expect(card!.assignedTo).toBe('Ian');
+    expect(card!.psaTickets).toEqual([
+      'Autotask #T20230401.0001',
+      'Autotask #23149',
+      'Autotask #1778',
+    ]);
+  });
+
   it('formats the preferred time window with timezone', async () => {
     const card = await buildSchedulingRequestCard(
       {
