@@ -10,7 +10,8 @@ function getTools(): Tool[] {
   return [
     {
       name: 'timezest_teams_list',
-      description: 'List all teams available for scheduling',
+      description:
+        'List teams available for scheduling. Deleted teams are omitted, using the same live set as timezest_resources_list (teams GET /v1/resources still returns).',
       inputSchema: {
         type: 'object',
         properties: {

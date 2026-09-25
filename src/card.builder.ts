@@ -110,15 +110,61 @@ function asString(value: unknown): string | undefined {
   return typeof value === 'string' && value ? value : undefined;
 }
 
+function firstOf(request: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const key of keys) {
+    if (request[key] != null && request[key] !== '') return request[key];
+  }
+  return undefined;
+}
+
+/** TimeZest records use `name` (agents) or `internal_name` (teams, appointment types). */
+function recordName(record: unknown): string | undefined {
+  if (!record || typeof record !== 'object') return undefined;
+  const obj = record as Record<string, unknown>;
+  return asString(obj.name) ?? asString(obj.internal_name) ?? asString(obj.external_name);
+}
+
+function recordDuration(record: unknown): number | undefined {
+  if (!record || typeof record !== 'object') return undefined;
+  const obj = record as Record<string, unknown>;
+  if (typeof obj.duration === 'number') return obj.duration;
+  if (typeof obj.duration_mins === 'number') return obj.duration_mins;
+  return undefined;
+}
+
+function psaLabel(type: unknown): string {
+  const raw = String(type ?? 'PSA');
+  const known = PSA_LABELS[raw];
+  if (known) return known;
+  const lower = raw.toLowerCase();
+  if (lower.startsWith('autotask')) return 'Autotask';
+  if (lower.startsWith('connectwise')) return 'ConnectWise';
+  if (lower.startsWith('halo')) return 'Halo';
+  return raw || 'PSA';
+}
+
+function firstResourceId(value: unknown): string | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const first = value[0];
+  if (!first || typeof first !== 'object') return undefined;
+  return asString((first as Record<string, unknown>).id);
+}
+
 /** Format the preferred scheduling window from TimeZest's plain date/time strings. */
 function formatWindow(timeRange: unknown): string | undefined {
   if (!timeRange || typeof timeRange !== 'object') return undefined;
   const range = timeRange as Record<string, unknown>;
-  const start = [asString(range.earliestDate), asString(range.earliestTime)].filter(Boolean).join(' ');
-  const end = [asString(range.latestDate), asString(range.latestTime)].filter(Boolean).join(' ');
+  const start = [
+    asString(range.earliestDate) ?? asString(range.earliest_date),
+    asString(range.earliestTime) ?? asString(range.earliest_time),
+  ].filter(Boolean).join(' ');
+  const end = [
+    asString(range.latestDate) ?? asString(range.latest_date),
+    asString(range.latestTime) ?? asString(range.latest_time),
+  ].filter(Boolean).join(' ');
   let window = start && end ? `${start} → ${end}` : start || end;
   if (!window) return undefined;
-  const timezone = asString(range.timezone);
+  const timezone = asString(range.timezone) ?? asString(range.selected_time_zone);
   if (timezone) window += ` (${timezone})`;
   return window;
 }
@@ -144,50 +190,64 @@ export async function buildSchedulingRequestCard(
     psaTickets: [],
   };
 
-  const mode = asString(request.triggerMode);
+  const mode = asString(firstOf(request, 'triggerMode', 'trigger_mode'));
   if (mode) card.mode = MODE_LABELS[mode] ?? mode;
 
   const endUser = (request.endUser ?? {}) as Record<string, unknown>;
-  const customer = asString(endUser.name);
-  const company = asString(endUser.company);
-  const email = asString(endUser.email);
+  const customer = asString(endUser.name) ?? asString(request.end_user_name);
+  const company = asString(endUser.company) ?? asString(request.end_user_company);
+  const email = asString(endUser.email) ?? asString(request.end_user_email);
   if (customer) card.customer = customer;
   if (company) card.company = company;
   if (email) card.email = email;
 
-  const window = formatWindow(request.timeRange);
+  const window = formatWindow(request.timeRange) ?? formatWindow({
+    earliest_date: request.earliest_date,
+    earliest_time: request.earliest_time,
+    latest_date: request.latest_date,
+    latest_time: request.latest_time,
+    selected_time_zone: request.selected_time_zone,
+  });
   if (window) card.window = window;
-  const scheduledAt = asString(request.scheduledAt);
+  const scheduledAt = asString(firstOf(request, 'scheduledAt', 'scheduled_at'));
   if (scheduledAt) card.scheduledAt = scheduledAt;
-  const createdAt = asString(request.createdAt);
+  const createdAt = asString(firstOf(request, 'createdAt', 'created_at'));
   if (createdAt) card.createdAt = createdAt;
 
   const notes = asString(request.notes);
   if (notes) card.notes = notes.slice(0, CARD_NOTES_MAX_LENGTH);
 
   // Only ever surface http(s) booking URLs — vendor data is untrusted.
-  const bookingUrl = asString(request.bookingUrl);
+  // TimeZest calls this scheduling_url; older payloads use bookingUrl.
+  const bookingUrl = asString(firstOf(request, 'bookingUrl', 'scheduling_url'));
   if (bookingUrl && /^https?:\/\//i.test(bookingUrl)) card.bookingUrl = bookingUrl;
 
-  if (Array.isArray(request.associatedEntities)) {
-    card.psaTickets = request.associatedEntities
+  const entities = Array.isArray(request.associatedEntities)
+    ? request.associatedEntities
+    : Array.isArray(request.associated_entities)
+      ? request.associated_entities
+      : undefined;
+  if (entities) {
+    card.psaTickets = entities
       .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
       .map((e) => {
-        const label = PSA_LABELS[String(e.type)] ?? String(e.type ?? 'PSA');
+        const label = psaLabel(e.type);
         const ref = asString(e.number) ?? (e.id != null ? String(e.id) : '');
         return ref ? `${label} #${ref}` : label;
       });
   }
 
   // Resolve the appointment type to a human-readable heading (best-effort).
-  const appointmentTypeId = asString(request.appointmentTypeId);
+  const appointmentTypeId = asString(firstOf(request, 'appointmentTypeId', 'appointment_type_id'));
   if (appointmentTypeId) {
     card.title = `Appointment type #${appointmentTypeId}`;
     try {
       const type = await client.appointmentTypes.get(appointmentTypeId);
-      if (type?.name) {
-        card.title = type.name;
-        if (typeof type.duration === 'number') card.duration = `${type.duration} min`;
+      const name = recordName(type);
+      if (name) {
+        card.title = name;
+        const duration = recordDuration(type);
+        if (typeof duration === 'number') card.duration = `${duration} min`;
       }
     } catch {
       // Best-effort: keep the #id heading rather than failing the tool.
@@ -196,16 +256,21 @@ export async function buildSchedulingRequestCard(
 
   // Resolve the booked resource — TimeZest resource ids may be an agent or a
   // team, so try both single-entity lookups the client already has.
-  const assignedResourceId = asString(request.assignedResourceId);
+  // API payloads put the booked resource on scheduled_agents / resources.
+  const assignedResourceId = asString(request.assignedResourceId)
+    ?? firstResourceId(request.scheduled_agents)
+    ?? firstResourceId(request.resources);
   if (assignedResourceId) {
     card.assignedTo = `#${assignedResourceId}`;
     try {
       const agent = await client.agents.get(assignedResourceId);
-      if (agent?.name) card.assignedTo = agent.name;
+      const agentName = recordName(agent);
+      if (agentName) card.assignedTo = agentName;
     } catch {
       try {
         const team = await client.teams.get(assignedResourceId);
-        if (team?.name) card.assignedTo = team.name;
+        const teamName = recordName(team);
+        if (teamName) card.assignedTo = teamName;
       } catch {
         // Best-effort: keep the #id label.
       }

@@ -1,6 +1,7 @@
 import type { HttpClient } from '../http.js';
 import type { Resource, ResourceListParams } from '../types/resources.js';
 import { unwrapResponse } from '../pagination.js';
+import { takePage } from '../list-page.js';
 
 export class ResourcesResource {
   constructor(private readonly httpClient: HttpClient) {}
@@ -12,7 +13,6 @@ export class ResourcesResource {
   async list(params: ResourceListParams = {}): Promise<Resource[]> {
     const response = await this.httpClient.request<Resource[] | { data: Resource[] }>('/v1/resources', {
       params: {
-        page_size: params.pageSize,
         starting_after: params.startingAfter,
         ending_before: params.endingBefore,
         filter: params.filter,
@@ -20,6 +20,8 @@ export class ResourcesResource {
       },
     });
 
-    return unwrapResponse<Resource>(response);
+    // Resources is already the live (schedulable) set — do not filter further.
+    // page_size is not a TimeZest query param; truncate the fixed page instead.
+    return takePage(unwrapResponse<Resource>(response), params.pageSize);
   }
 }
