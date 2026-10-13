@@ -1,0 +1,19 @@
+services:
+  # Gateway mode. The TimeZest API token arrives per request on
+  # X-Timezest-Api-Token. Do not set TIMEZEST_API_TOKEN or env_file here —
+  # that would put a static vendor credential in the container. Compose
+  # interpolates CONDUIT_S2S_SECRET from the project .env. For AUTH_MODE=env,
+  # pass TIMEZEST_API_TOKEN on that process instead (see the README).
+  timezest-mcp:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      # 0.0.0.0 is the interface inside the container. The port publish above
+      # stays on loopback. Startup still refuses to run without a real
+      # CONDUIT_S2S_SECRET.
+      - MCP_TRANSPORT=http
+      - MCP_HTTP_PORT=8080
+      - MCP_HTTP_HOST=0.0.0.0
+      - AUTH_MODE=gateway
+      - CONDUIT_S2S_SECRET=${CONDUIT_S2S_SECRET:?set CONDUIT_S2S_SECRET}

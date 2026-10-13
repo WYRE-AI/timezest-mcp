@@ -17,7 +17,8 @@ async function main() {
   logger.info('Starting TimeZest MCP server', { transport, httpPort });
 
   if (transport === 'http') {
-    // HTTP transport for gateway mode
+    // Fail-closed S2S startup, loopback dev bypass, and gateway credential
+    // rejection live in startHttpServer. stdio does not use S2S auth.
     startHttpServer(httpPort);
   } else {
     // Stdio transport for direct connections
