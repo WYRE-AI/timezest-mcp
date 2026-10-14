@@ -36,13 +36,38 @@ TIMEZEST_API_TOKEN=your-token timezest-mcp
 
 ## Configuration
 
+Copy [`.env.example`](.env.example) and set the variables below.
+
 | Environment Variable | Required | Description |
 |---------------------|----------|-------------|
-| `TIMEZEST_API_TOKEN` | Yes | TimeZest API token |
-| `MCP_TRANSPORT` | No | Transport mode: `stdio` (default) or `http` |
-| `MCP_HTTP_PORT` | No | HTTP port (default: 8080) |
-| `AUTH_MODE` | No | Set to `gateway` for WYRE gateway integration |
+| `TIMEZEST_API_TOKEN` | For stdio and `AUTH_MODE=env` | TimeZest API token. Gateway mode does not read this. |
+| `MCP_TRANSPORT` | No | `stdio` (default) or `http` |
+| `MCP_HTTP_PORT` | No | HTTP port. Defaults to `8080`. |
+| `MCP_HTTP_HOST` | No | Bind address when `MCP_TRANSPORT=http`. Defaults to `127.0.0.1`. A configured `CONDUIT_S2S_SECRET` honors this value. The container image sets `0.0.0.0`. |
+| `AUTH_MODE` | No | `gateway` (Docker image and Compose default) or `env`. Gateway mode requires `X-Timezest-Api-Token` on each `/mcp` request and never falls back to `TIMEZEST_API_TOKEN`. `env` uses that variable only after S2S auth succeeds. |
+| `CONDUIT_S2S_SECRET` | Yes for HTTP | Service-to-service secret. Generate one with `openssl rand -hex 32`. The HTTP server logs an error and exits non-zero when this is empty or a known placeholder (`changeme`, `your-s2s-secret`, `secret`, `placeholder`, and similar public examples). Compose will not start without it. Never commit a real value. The value is never logged. |
+| `MCP_ALLOW_INSECURE_DEV` | No | Set to exactly `1` only for local development to start HTTP without `CONDUIT_S2S_SECRET`. The process logs a warning, does not enforce `X-Gateway-S2S`, and forces the listener onto `127.0.0.1` even if `MCP_HTTP_HOST` is a wider address. A known placeholder secret is still refused. |
 | `LOG_LEVEL` | No | Log level: `debug`, `info` (default), `warn`, `error` |
+
+`/health` stays unauthenticated and does not read credentials. The stdio transport does not use `CONDUIT_S2S_SECRET`.
+
+### HTTP authentication
+
+With `MCP_TRANSPORT=http` and `CONDUIT_S2S_SECRET` set, every `/mcp` request must include `X-Gateway-S2S`. The header value is:
+
+```text
+t=<unix seconds>,v1=<hex hmac-sha256>
+```
+
+`v1` is HMAC-SHA256, as lowercase hex, of the exact ASCII string `t=<unix seconds>` (the same prefix that appears in the header), keyed with `CONDUIT_S2S_SECRET`. The timestamp must be within 300 seconds of the server clock. A missing or invalid header returns 401. The secret is never written to logs.
+
+```bash
+t=$(date +%s)
+sig=$(printf 't=%s' "$t" | openssl dgst -sha256 -hmac "$CONDUIT_S2S_SECRET" -hex | awk '{print $NF}')
+# X-Gateway-S2S: t=$t,v1=$sig
+```
+
+In `AUTH_MODE=gateway`, `/mcp` also requires `X-Timezest-Api-Token`. That header is the only credential source for the request. A missing header returns 401 and the server does not fall back to `TIMEZEST_API_TOKEN`.
 
 ## Tools
 
@@ -186,15 +211,52 @@ TIMEZEST_API_TOKEN=your-token npm run dev
 
 ### Docker Development
 
+The image sets `AUTH_MODE=gateway` and `MCP_HTTP_HOST=0.0.0.0`. Stdio (the image default until `MCP_TRANSPORT=http`) still reads `TIMEZEST_API_TOKEN` and does not use `CONDUIT_S2S_SECRET`.
+
 ```bash
 # Build image
 docker build -t timezest-mcp --build-arg NODE_AUTH_TOKEN=$GITHUB_TOKEN .
 
-# Run container
+# Stdio
 docker run -it --rm \
   -e TIMEZEST_API_TOKEN=your-token \
   -e LOG_LEVEL=debug \
   timezest-mcp
+```
+
+HTTP gateway mode publishes the port on loopback and passes the S2S secret. The TimeZest token arrives on each request as `X-Timezest-Api-Token`; it is not read from the environment. Generate the secret with `openssl rand -hex 32` — example placeholders such as `changeme` or `your-s2s-secret` are rejected.
+
+```bash
+export CONDUIT_S2S_SECRET="$(openssl rand -hex 32)"
+docker run --rm \
+  -e MCP_TRANSPORT=http \
+  -e CONDUIT_S2S_SECRET="$CONDUIT_S2S_SECRET" \
+  -p 127.0.0.1:8080:8080 \
+  timezest-mcp
+```
+
+Compose refuses to start when `CONDUIT_S2S_SECRET` is unset. The gateway service sets `AUTH_MODE=gateway` and does not inject `TIMEZEST_API_TOKEN` or `env_file`:
+
+```bash
+CONDUIT_S2S_SECRET="$CONDUIT_S2S_SECRET" docker compose up
+```
+
+Single-tenant HTTP (`AUTH_MODE=env`) still requires the S2S secret, then uses `TIMEZEST_API_TOKEN`:
+
+```bash
+docker run --rm \
+  -e MCP_TRANSPORT=http \
+  -e CONDUIT_S2S_SECRET="$CONDUIT_S2S_SECRET" \
+  -e AUTH_MODE=env \
+  -e TIMEZEST_API_TOKEN=your-token \
+  -p 127.0.0.1:8080:8080 \
+  timezest-mcp
+```
+
+Local HTTP without a secret is development-only. It binds `127.0.0.1` only and logs a warning. A non-loopback `MCP_HTTP_HOST` is overridden:
+
+```bash
+MCP_TRANSPORT=http MCP_ALLOW_INSECURE_DEV=1 npm run dev
 ```
 
 ## MCP Integration
@@ -221,7 +283,8 @@ Add to your MCP settings:
 
 The server is designed for the WYRE MCP Gateway with:
 - Per-request server instances (stateless)
-- Header-based credential injection
+- `X-Gateway-S2S` signing on every `/mcp` request (see [HTTP authentication](#http-authentication))
+- `X-Timezest-Api-Token` credential injection in gateway mode, with no fallback to `TIMEZEST_API_TOKEN`
 - Structured error responses
 - Flat tool list (no navigation state to enter)
 

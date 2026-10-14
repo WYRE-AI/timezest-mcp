@@ -26,6 +26,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV AUTH_MODE=gateway
 ENV MCP_HTTP_PORT=8080
+# All interfaces inside the container when MCP_TRANSPORT=http. Startup still
+# refuses to listen without a real CONDUIT_S2S_SECRET. MCP_ALLOW_INSECURE_DEV=1
+# forces 127.0.0.1 even while this host is 0.0.0.0.
+ENV MCP_HTTP_HOST=0.0.0.0
 
 # Create non-root user
 RUN addgroup -g 1001 -S mcp && adduser -u 1001 -S mcp -G mcp
