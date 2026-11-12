@@ -19,6 +19,7 @@ RUN npm prune --omit=dev
 
 # Production stage
 FROM node:26-alpine
+RUN apk -U upgrade --no-cache
 
 WORKDIR /app
 
@@ -45,6 +46,8 @@ LABEL org.opencontainers.image.source=https://github.com/WYRE-AI/timezest-mcp
 LABEL io.modelcontextprotocol.server.name="io.github.WYRE-AI/timezest-mcp"
 
 # Switch to non-root user
+# npm is not needed at runtime; removing it clears Trivy CVEs in its bundled deps
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 USER mcp
 
 # Expose HTTP port
