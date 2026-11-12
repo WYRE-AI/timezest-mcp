@@ -1,3 +1,10 @@
+## [Unreleased]
+
+### Security
+
+- Patched vulnerable npm dependencies reported by the Trivy image scan (including `proxy-addr`, `hono`, `qs`, `body-parser`, `ip-address`, `@modelcontextprotocol/sdk`).
+- Container image: removed the unused npm CLI from the runtime stage and upgraded Alpine packages (zlib).
+
 ## [1.2.5](https://github.com/wyre-technology/timezest-mcp/compare/v1.2.4...v1.2.5) (2026-07-21)
 
 
